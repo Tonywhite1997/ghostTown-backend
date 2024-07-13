@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRoute from "./routes/user";
 import authRoute from "./routes/auth";
@@ -12,6 +13,13 @@ dotenv.config();
 const PORT: number = 5000;
 
 app.use(express.json(), cookieParser());
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
+    credentials: true,
+  })
+);
 
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);

@@ -96,7 +96,7 @@ export const login = async (req: Request, res: Response) => {
     res.status(200).json({
       id: user.id,
       username: user.username,
-      profilePic: user.profilePicURL,
+      profilePicURL: user.profilePicURL,
     });
   } catch (err: any) {
     sendServerError({ res, err });
@@ -121,7 +121,11 @@ export const getMe = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
-      user: me,
+      username: me.username,
+      email: me.email,
+      profilePicURL: me.profilePicURL,
+      updated_at: me.updated_at,
+      created_at: me.created_at,
     });
   } catch (err) {
     sendServerError({ err, res });
