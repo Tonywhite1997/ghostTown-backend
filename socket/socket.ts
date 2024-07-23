@@ -24,11 +24,14 @@ io.on("connection", (socket) => {
     socketMap[userId] = socket.id;
   }
 
-  socket.emit("getOnlineUsers", Object.keys(socketMap));
+  io.emit("onlineUsers", Object.keys(socketMap));
 
   socket.on("disconnect", () => {
-    delete socketMap[userId];
-    socket.emit("getOnlineUsers", Object.keys(socketMap));
+    if (socketMap[userId]) {
+      delete socketMap[userId];
+
+      io.emit("onlineUsers", Object.keys(socketMap));
+    }
   });
 });
 
