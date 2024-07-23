@@ -6,8 +6,8 @@ import userRoute from "./routes/user";
 import authRoute from "./routes/auth";
 import chatRoute from "./routes/chat";
 import messageRoute from "./routes/message";
+import { app, server } from "./socket/socket";
 
-const app = express();
 dotenv.config();
 
 const PORT: number = 5000;
@@ -35,6 +35,6 @@ app.all("*", (req: Request, res: Response) => {
   });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`app is listening on port ${PORT}`);
 });

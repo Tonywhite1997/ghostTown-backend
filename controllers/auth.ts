@@ -111,8 +111,7 @@ export const getMe = async (req: Request, res: Response) => {
         username: true,
         email: true,
         profilePicURL: true,
-        updated_at: true,
-        created_at: true,
+        id: true,
       },
     });
 
@@ -120,13 +119,7 @@ export const getMe = async (req: Request, res: Response) => {
       return sendClientError(res, "Unathorized", 401);
     }
 
-    res.status(200).json({
-      username: me.username,
-      email: me.email,
-      profilePicURL: me.profilePicURL,
-      updated_at: me.updated_at,
-      created_at: me.created_at,
-    });
+    res.status(200).json(me);
   } catch (err) {
     sendServerError({ err, res });
   }

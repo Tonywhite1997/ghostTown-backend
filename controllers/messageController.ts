@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { sendClientError, sendServerError } from "../errorhandlers/error";
+import { getReceiverSocketId, io } from "../socket/socket";
 
 const prisma = new PrismaClient();
 
@@ -52,6 +53,21 @@ export const sendMessage = async (req: Request, res: Response) => {
           },
         },
       });
+    }
+
+    const sender = await prisma.user.findUnique({
+      where: {
+        id: senderID,
+      },
+    });
+
+    const receiverSocketId = getReceiverSocketId(receiverID);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
+
+    if (sender) {
+      io.to(receiverSocketId).emit("newRecipient", sender);
     }
 
     res.status(200).json(newMessage);
