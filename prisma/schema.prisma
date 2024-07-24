@@ -37,6 +37,8 @@ model Chat {
 
   participants   User[]
   participantIDs String[]
+  last_message   String   @default("no new message")
+  unread_count   Int      @default(0)
 
   messages   Message[]
   messageIDs String[]
@@ -49,6 +51,9 @@ model Message {
   id         String   @id @default(cuid())
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+
+  is_read                Boolean  @default(false)
+  last_message_timeStamp DateTime @default(now())
 
   author   User   @relation(fields: [authorID], references: [id])
   authorID String
