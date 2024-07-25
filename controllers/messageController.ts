@@ -51,6 +51,9 @@ export const sendMessage = async (req: Request, res: Response) => {
               id: newMessage.id,
             },
           },
+          last_message: newMessage.body,
+          unread_count: chat.unread_count + 1,
+          last_message_timeStamp: newMessage.updated_at,
         },
       });
     }

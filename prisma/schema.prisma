@@ -35,10 +35,11 @@ enum GENDER {
 model Chat {
   id String @id @default(cuid())
 
-  participants   User[]
-  participantIDs String[]
-  last_message   String   @default("no new message")
-  unread_count   Int      @default(0)
+  participants           User[]
+  participantIDs         String[]
+  last_message           String   @default("no new message")
+  unread_count           Int      @default(0)
+  last_message_timeStamp DateTime @default(now())
 
   messages   Message[]
   messageIDs String[]
@@ -52,8 +53,7 @@ model Message {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  is_read                Boolean  @default(false)
-  last_message_timeStamp DateTime @default(now())
+  is_read Boolean @default(false)
 
   author   User   @relation(fields: [authorID], references: [id])
   authorID String

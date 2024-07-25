@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { sendServerError } from "../errorhandlers/error";
+import { sendClientError, sendServerError } from "../errorhandlers/error";
 import { getReceiverSocketId, io } from "../socket/socket";
 
 const prisma = new PrismaClient();
@@ -34,18 +34,24 @@ export const getAllChats = async (req: Request, res: Response) => {
           hasSome: [req.user.id],
         },
       },
+      select: {
+        participantIDs: true,
+        unread_count: true,
+        last_message: true,
+        last_message_timeStamp: true,
+      },
     });
 
     if (!chats.length) {
       return res.status(200).json({ chats: [] });
     }
 
-    const participantIDs = chats.flatMap((chat) =>
-      chat.participantIDs.filter((id) => req.user.id !== id)
+    const participantIDs = chats.flatMap((chat: any) =>
+      chat.participantIDs.filter((id: string) => req.user.id !== id)
     );
 
     const participants = await Promise.all(
-      participantIDs.map(async (participant) => {
+      participantIDs.map(async (participant: string) => {
         return await prisma.user.findUnique({
           where: {
             id: participant,
@@ -62,7 +68,40 @@ export const getAllChats = async (req: Request, res: Response) => {
     const receiverSocketId = getReceiverSocketId(req.user.id);
     io.to(receiverSocketId).emit("chatRecipients", participants);
 
-    res.status(200).json(participants);
+    const data = participants.map((participant: any) => {
+      return chats
+        .map((chat) => {
+          if (chat.participantIDs.includes(participant?.id)) {
+            return { ...participant, ...chat };
+          }
+          return null;
+        })
+        .find((item) => item !== null);
+    });
+
+    res.status(200).json(data);
+  } catch (err: any) {
+    sendServerError({ res, err });
+  }
+};
+
+export const readChats = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!id) return sendClientError(res, "user id is required", 401);
+
+  try {
+    const chats = await prisma.chat.updateMany({
+      where: {
+        participantIDs: {
+          hasEvery: [req.user.id, id],
+        },
+      },
+      data: {
+        unread_count: 0,
+      },
+    });
+
+    res.status(200).json(chats);
   } catch (err: any) {
     sendServerError({ res, err });
   }
