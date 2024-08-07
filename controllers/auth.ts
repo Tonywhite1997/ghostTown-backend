@@ -139,6 +139,45 @@ export const getMe = async (req: Request, res: Response) => {
   }
 };
 
+export const changePassword = async (req: Request, res: Response) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword && !newPassword)
+    return sendClientError(res, "old and new password needed", 400);
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { password: true, id: true },
+    });
+
+    if (!user) return sendClientError(res, "Unauthorized", 401);
+
+    const isPasswordCorrect: boolean = await decryptPassword(
+      oldPassword,
+      user.password
+    );
+
+    if (!isPasswordCorrect)
+      return sendClientError(res, "incorrect password", 401);
+
+    const encryptedPassword = await encryptPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: encryptedPassword,
+      },
+    });
+
+    res.status(200).json({
+      message: "password changed successfully",
+    });
+  } catch (err: any) {
+    sendServerError({ res, err });
+  }
+};
+
 export const deleteAccount = async (req: Request, res: Response) => {
   const { password } = req.body;
 
