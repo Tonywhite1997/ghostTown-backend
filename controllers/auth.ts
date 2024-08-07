@@ -103,6 +103,20 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+export const logout = (req: Request, res: Response) => {
+  try {
+    res.cookie("jtw", "", {
+      maxAge: 0,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    res.status(200).json({ message: "Logout successfully" });
+  } catch (err) {
+    sendServerError({ res, err });
+  }
+};
+
 export const getMe = async (req: Request, res: Response) => {
   try {
     const me = await prisma.user.findFirst({
@@ -122,5 +136,34 @@ export const getMe = async (req: Request, res: Response) => {
     res.status(200).json(me);
   } catch (err) {
     sendServerError({ err, res });
+  }
+};
+
+export const deleteAccount = async (req: Request, res: Response) => {
+  const { password } = req.body;
+
+  if (!password) return sendClientError(res, "please enter your password", 402);
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: req.user.id,
+      },
+    });
+
+    if (!user) return sendClientError(res, "user not exist", 400);
+
+    const isPassCorrect: boolean = await decryptPassword(
+      password,
+      user.password
+    );
+
+    if (!isPassCorrect) return sendClientError(res, "incorrect password", 401);
+
+    await prisma.user.delete({ where: { id: user.id } });
+    res.status(200).json({ message: "Deleted" });
+  } catch (err: any) {
+    sendServerError({ res, err });
+    console.log(err);
   }
 };

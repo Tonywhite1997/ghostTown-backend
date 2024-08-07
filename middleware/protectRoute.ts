@@ -29,7 +29,7 @@ export const protectRoute = async (
     const decoded = verifyJWT(jwt);
 
     if (!decoded) {
-      return sendClientError(res, "Unathorized", 401);
+      return sendClientError(res, "Unauthorized", 401);
     }
 
     const user = await prisma.user.findFirst({
@@ -40,7 +40,7 @@ export const protectRoute = async (
     });
 
     if (!user) {
-      return sendClientError(res, "User not found", 404);
+      return sendClientError(res, "Unauthorized", 401);
     }
 
     req.user = user;

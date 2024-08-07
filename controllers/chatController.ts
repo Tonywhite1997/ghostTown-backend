@@ -68,7 +68,7 @@ export const getAllChats = async (req: Request, res: Response) => {
     const receiverSocketId = getReceiverSocketId(req.user.id);
     io.to(receiverSocketId).emit("chatRecipients", participants);
 
-    const data = participants.map((participant: any) => {
+    const data = participants.flatMap((participant: any) => {
       return chats
         .map((chat) => {
           if (chat.participantIDs.includes(participant?.id)) {
@@ -76,7 +76,7 @@ export const getAllChats = async (req: Request, res: Response) => {
           }
           return null;
         })
-        .find((item) => item !== null);
+        .filter((item) => item !== null);
     });
 
     res.status(200).json(data);
