@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import axios from "axios";
-
 import { sendServerError, sendClientError } from "../errorhandlers/error";
 import { encryptPassword } from "../utils/encryptPassword";
 import { generateJWT } from "../utils/generateToken";
 import { setCookie } from "../utils/setcookie";
 import { decryptPassword } from "../utils/decryptPassword";
+import { generateRandomNums } from "../utils/generateRandomNum";
+import { sendPassResetToEmail } from "../email/forgotPassword";
 
 const prisma = new PrismaClient();
 
@@ -97,6 +97,7 @@ export const login = async (req: Request, res: Response) => {
       id: user.id,
       username: user.username,
       profilePicURL: user.profilePicURL,
+      email: user.email,
     });
   } catch (err: any) {
     sendServerError({ res, err });
@@ -105,10 +106,11 @@ export const login = async (req: Request, res: Response) => {
 
 export const logout = (req: Request, res: Response) => {
   try {
-    res.cookie("jtw", "", {
+    res.cookie("jwt", "", {
       maxAge: 0,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV !== "development",
+      sameSite: "strict",
     });
 
     res.status(200).json({ message: "Logout successfully" });
@@ -175,6 +177,67 @@ export const changePassword = async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     sendServerError({ res, err });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) return sendClientError(res, "Email is required", 401);
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) return sendClientError(res, "invalid email", 401);
+
+    const resetToken: string = generateRandomNums();
+    const tokenExpiresAt = Date.now() + 5 * 1000 * 60;
+
+    await sendPassResetToEmail(user.email, resetToken);
+
+    await prisma.user.update({
+      where: { email: user.email },
+      data: { resetToken, tokenExpiresAt: new Date(tokenExpiresAt) },
+    });
+
+    res.status(200).json({ message: "token sent" });
+  } catch (err: any) {
+    sendServerError({ res, err });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { resetToken, newPassword } = req.body;
+
+  if (!resetToken && !newPassword)
+    return sendClientError(res, "reset token and password required", 401);
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: { resetToken },
+      select: { tokenExpiresAt: true, id: true },
+    });
+
+    if (!user) return sendClientError(res, "invalid token", 401);
+
+    const isTokenExpired =
+      user.tokenExpiresAt && user.tokenExpiresAt < new Date();
+
+    if (isTokenExpired) return sendClientError(res, "Token expired", 401);
+
+    const encryptedPassword = await encryptPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: encryptedPassword,
+        resetToken: null,
+        tokenExpiresAt: null,
+      },
+    });
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (err: any) {
+    sendServerError({ err, res });
   }
 };
 

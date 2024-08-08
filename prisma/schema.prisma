@@ -8,16 +8,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  username      String    @unique
-  email         String    @unique
-  password      String
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
-  profilePicURL String
-  gender        GENDER
-  messages      Message[]
-  chats         Chat[]    @relation("ChatToUser")
+  id             String    @id @default(cuid())
+  username       String    @unique
+  email          String    @unique
+  password       String
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  profilePicURL  String
+  resetToken     String?
+  tokenExpiresAt DateTime?
+  gender         GENDER
+  messages       Message[]
+  chats          Chat[]    @relation("ChatToUser")
 }
 
 model Chat {

@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
+import morgan from "morgan";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRoute from "./routes/user";
@@ -20,6 +21,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(morgan("dev"));
 
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
