@@ -4,7 +4,7 @@ import { sendClientError, sendServerError } from "../errorhandlers/error";
 const Prisma = new PrismaClient();
 
 export const getUsers = async (req: Request, res: Response) => {
-  const offset: number | any = req.query.offset;
+  const offset: number | any = req.query.offset || 0;
 
   try {
     const users = await Prisma.user.findMany({

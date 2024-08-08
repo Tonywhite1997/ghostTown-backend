@@ -20,6 +20,8 @@ export const getChat = async (req: Request, res: Response) => {
       },
     });
 
+    console.log(chat);
+
     res.status(200).json(chat?.messages);
   } catch (err) {
     sendServerError({ err, res });
@@ -43,7 +45,7 @@ export const getAllChats = async (req: Request, res: Response) => {
     });
 
     if (!chats.length) {
-      return res.status(200).json({ chats: [] });
+      return res.status(200).json([]);
     }
 
     const participantIDs = chats.flatMap((chat: any) =>
