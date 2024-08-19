@@ -7,6 +7,7 @@ import userRoute from "./routes/user";
 import authRoute from "./routes/auth";
 import chatRoute from "./routes/chat";
 import messageRoute from "./routes/message";
+import photoRoute from "./routes/photo";
 import { app, server } from "./socket/socket";
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/chats", chatRoute);
 app.use("/api/messages", messageRoute);
+app.use("/api/photo", photoRoute);
 
 app.all("*", (req: Request, res: Response) => {
   const endpoint: string = req.originalUrl;

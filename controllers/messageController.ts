@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
+import { S3uploadPhoto } from "../aws/upload";
 import { sendClientError, sendServerError } from "../errorhandlers/error";
 import { getReceiverSocketId, io } from "../socket/socket";
 
@@ -10,8 +11,8 @@ export const sendMessage = async (req: Request, res: Response) => {
   const { id: receiverID } = req.params;
   const { body } = req.body;
   try {
-    if (!body) {
-      return sendClientError(res, "messsage body required", 401);
+    if (!body && !req.file) {
+      return sendClientError(res, "you need to send something", 401);
     }
 
     let chat = await prisma.chat.findFirst({
@@ -32,11 +33,19 @@ export const sendMessage = async (req: Request, res: Response) => {
       });
     }
 
+    let photoURL: string | undefined;
+
+    if (req.file) {
+      const { objectURL } = await S3uploadPhoto(req.file);
+      photoURL = objectURL;
+    }
+
     const newMessage = await prisma.message.create({
       data: {
         authorID: senderID,
         chatID: chat?.id,
-        body,
+        body: body || null,
+        photoURL: photoURL || null,
       },
     });
 
@@ -51,7 +60,7 @@ export const sendMessage = async (req: Request, res: Response) => {
               id: newMessage.id,
             },
           },
-          last_message: newMessage.body,
+          last_message: newMessage.body || newMessage.photoURL || "",
           unread_count: chat.unread_count + 1,
           last_message_timeStamp: newMessage.updated_at,
         },

@@ -41,7 +41,8 @@ model Message {
   updated_at DateTime @updatedAt
   authorID   String
   chatID     String
-  body       String
+  body       String?
+  photoURL   String?
   is_read    Boolean  @default(false)
   author     User     @relation(fields: [authorID], references: [id], onDelete: Cascade)
   chat       Chat     @relation(fields: [chatID], references: [id])

@@ -20,8 +20,6 @@ export const getChat = async (req: Request, res: Response) => {
       },
     });
 
-    console.log(chat);
-
     res.status(200).json(chat?.messages);
   } catch (err) {
     sendServerError({ err, res });
