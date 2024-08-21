@@ -1,24 +1,30 @@
 import { Response, Request } from "express";
-import multer from "multer";
+import multer, { FileFilterCallback } from "multer";
 import { sendClientError, sendServerError } from "../errorhandlers/error";
 import { S3uploadPhoto } from "../aws/upload";
 
+interface CustomRequest extends Request {
+  file?: Express.Multer.File;
+}
+
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-export const uploadPhoto = upload.single("photo");
-
-export const savePhoto = async (req: Request, res: Response) => {
-  try {
-    if (!req.file) {
-      return sendClientError(res, "no file detected", 400);
-    }
-
-    const { objectURL } = await S3uploadPhoto(req.file);
-
-    res.status(200).json({ body: objectURL });
-  } catch (err) {
-    console.log(err);
-    sendServerError({ res, err });
+const fileFilter = (
+  req: CustomRequest,
+  file: Express.Multer.File,
+  cb: FileFilterCallback
+) => {
+  const allowedMimeTypes: string[] = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+  ];
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("only image files are allowed") as any, false);
   }
 };
+const upload = multer({ storage, fileFilter });
+
+export const uploadPhoto = upload.single("photo");
