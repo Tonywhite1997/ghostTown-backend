@@ -67,19 +67,61 @@ export const sendMessage = async (req: Request, res: Response) => {
       });
     }
 
-    const sender = await prisma.user.findUnique({
-      where: {
-        id: senderID,
-      },
-    });
-
     const receiverSocketId = getReceiverSocketId(receiverID);
+
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 
-    if (receiverSocketId && sender) {
-      io.to(receiverSocketId).emit("newRecipient", sender);
+    const chats = await prisma.chat.findMany({
+      where: {
+        participantIDs: {
+          hasSome: [receiverID],
+        },
+      },
+      select: {
+        participantIDs: true,
+        unread_count: true,
+        last_message: true,
+        last_message_timeStamp: true,
+      },
+    });
+
+    //reciverid change from req.user.id
+    if (chats.length) {
+      const participantIDs = chats.flatMap((chat: any) =>
+        chat.participantIDs.filter((id: string) => receiverID !== id)
+      );
+
+      const participants = await Promise.all(
+        participantIDs.map(async (participant: string) => {
+          return await prisma.user.findUnique({
+            where: {
+              id: participant,
+            },
+            select: {
+              id: true,
+              username: true,
+              profilePicURL: true,
+            },
+          });
+        })
+      );
+
+      const data = participants.flatMap((participant: any) => {
+        return chats
+          .map((chat) => {
+            if (chat.participantIDs.includes(participant?.id)) {
+              return { ...participant, ...chat };
+            }
+            return null;
+          })
+          .filter((item) => item !== null);
+      });
+
+      if (receiverSocketId && chats) {
+        io.to(receiverSocketId).emit("chatRecipients", data);
+      }
     }
 
     res.status(200).json(newMessage);

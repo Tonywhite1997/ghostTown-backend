@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { sendClientError, sendServerError } from "../errorhandlers/error";
-import { getReceiverSocketId, io } from "../socket/socket";
 
 const prisma = new PrismaClient();
 
@@ -15,8 +14,12 @@ export const getChat = async (req: Request, res: Response) => {
           hasEvery: [senderID, receiverID],
         },
       },
-      select: {
-        messages: true,
+      include: {
+        messages: {
+          orderBy: {
+            created_at: "asc",
+          },
+        },
       },
     });
 
@@ -39,6 +42,7 @@ export const getAllChats = async (req: Request, res: Response) => {
         unread_count: true,
         last_message: true,
         last_message_timeStamp: true,
+        messages: true,
       },
     });
 
@@ -65,14 +69,19 @@ export const getAllChats = async (req: Request, res: Response) => {
       })
     );
 
-    const receiverSocketId = getReceiverSocketId(req.user.id);
-    io.to(receiverSocketId).emit("chatRecipients", participants);
-
     const data = participants.flatMap((participant: any) => {
       return chats
         .map((chat) => {
           if (chat.participantIDs.includes(participant?.id)) {
-            return { ...participant, ...chat };
+            const messagesLength = chat.messages.length;
+            const lastAuthor = chat.messages[messagesLength - 1];
+            return {
+              ...participant,
+              unread_count: chat.unread_count,
+              last_message: chat.last_message,
+              last_message_timeStamp: chat.last_message_timeStamp,
+              lastAuthor: lastAuthor.authorID,
+            };
           }
           return null;
         })
