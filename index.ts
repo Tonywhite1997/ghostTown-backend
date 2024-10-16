@@ -17,7 +17,7 @@ const PORT: number = 5000;
 app.use(express.json(), cookieParser());
 app.use(
   cors({
-    origin: "https://myghosttown.netlify.app/",
+    origin: "https://myghosttown.netlify.app",
     // "http://localhost:3000",
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
     credentials: true,
