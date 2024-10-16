@@ -99,7 +99,7 @@ export const readChats = async (req: Request, res: Response) => {
   if (!id) return sendClientError(res, "user id is required", 401);
 
   try {
-    const chats = await prisma.chat.updateMany({
+    await prisma.chat.updateMany({
       where: {
         participantIDs: {
           hasEvery: [req.user.id, id],
@@ -110,7 +110,7 @@ export const readChats = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json(chats);
+    res.status(200).json({ unread_count: 0 });
   } catch (err: any) {
     sendServerError({ res, err });
   }
